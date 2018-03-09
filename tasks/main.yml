@@ -1,0 +1,2 @@
+- include: "tarball.yml"
+  when: amq_install_mode == "tarball"

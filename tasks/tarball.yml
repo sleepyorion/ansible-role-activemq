@@ -1,0 +1,28 @@
+
+- name: check to see if tarball already existed
+  stat: path="/tmp/apache-activemq-{{ amq_version }}-bin.tar.gz"
+  register: tarball_check
+
+- name: "Create Activemq group"
+  group:
+    name: "{{ amq_group }}"
+  become: yes
+
+- name: "Create Activemq user"
+  user:
+    name: "{{ amq_user }}"
+    group: "{{ amq_group }}"
+    home: "{{ amq_home_dir }}"
+    comment: "ActiveMQ service account"
+    createhome: no
+    state: present
+    system: yes
+  become: yes
+
+- name: "Get tarball - {{ amq_url }}"
+  get_url:
+    url: "{{ amq_url }}"
+    dest: "/tmp/apache-activemq-{{ amq_version }}-bin.tar.gz"
+    owner: "{{ amq_user }}"
+    group: "{{ amq_group }}"
+  when: tarball_check.stat.exists == False
