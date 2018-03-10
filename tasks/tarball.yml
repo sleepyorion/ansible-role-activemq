@@ -1,8 +1,4 @@
 
-- name: check to see if tarball already existed
-  stat: path="/tmp/apache-activemq-{{ amq_version }}-bin.tar.gz"
-  register: tarball_check
-
 - name: "Create Activemq group"
   group:
     name: "{{ amq_group }}"
@@ -19,6 +15,10 @@
     system: yes
   become: yes
 
+- name: check to see if tarball already existed
+  stat: path="/tmp/apache-activemq-{{ amq_version }}-bin.tar.gz"
+  register: tarball_check
+
 - name: "Get tarball - {{ amq_url }}"
   get_url:
     url: "{{ amq_url }}"
@@ -26,3 +26,51 @@
     owner: "{{ amq_user }}"
     group: "{{ amq_group }}"
   when: tarball_check.stat.exists == False
+  become: yes
+
+- name: Set amq version install dir
+  set_fact:
+    amq_version_install_dir: "{{ amq_install_dir }}/activemq/{{ amq_version }}"
+
+- name: check to see if tarball successfully downloaded
+  stat: path="/tmp/apache-activemq-{{ amq_version }}-bin.tar.gz"
+  register: tarball_check
+
+- name: check to see if install dest doesn't exist
+  stat: path="{{ amq_version_install_dir }}"
+  register: amq_install_dir_check
+
+- name: Create install dir
+  file:
+    path: "{{ amq_version_install_dir }}"
+    state: directory
+    owner: "{{ amq_user }}"
+    group: "{{ amq_group }}"
+    mode: 0775
+    recurse: yes
+  when: amq_install_dir_check.stat.exists == False
+  become: yes
+
+- name: extract activemq {{ amq_version }} from archive
+  shell: |
+    tar zxf "/tmp/apache-activemq-{{ amq_version }}-bin.tar.gz" --strip-components 1 -C {{ amq_version_install_dir }}
+  when: tarball_check.stat.exists == True
+  become: yes
+
+#/opt/activemq/conf/
+- name: create credentials.properties to {{ amq_version_install_dir }}/conf
+  template: src=amq_credentials_properties.j2 dest={{ amq_version_install_dir }}/conf/credentials.properties
+            owner={{ amq_user }} group={{ amq_group }} mode=0755
+  become: yes
+
+- name: create /etc/init.d/activemq service
+  template: src=amq_initd.j2 dest=/etc/init.d/activemq
+            owner=root group=root mode=0755
+  become: yes
+
+- name: start amq service 
+  service:
+    name: activemq
+    enabled: yes
+    state: started
+  become: yes
