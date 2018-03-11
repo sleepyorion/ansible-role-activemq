@@ -1,2 +1,14 @@
 - include: "tarball.yml"
   when: amq_install_mode == "tarball"
+
+- name: create /etc/init.d/activemq service
+  template: src=amq_initd.j2 dest=/etc/init.d/activemq
+            owner=root group=root mode=0755
+  become: yes
+
+- name: start amq service 
+  service:
+    name: activemq
+    enabled: yes
+    state: started
+  become: yes

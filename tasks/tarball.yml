@@ -57,20 +57,8 @@
   when: tarball_check.stat.exists == True
   become: yes
 
-#/opt/activemq/conf/
 - name: create credentials.properties to {{ amq_version_install_dir }}/conf
   template: src=amq_credentials_properties.j2 dest={{ amq_version_install_dir }}/conf/credentials.properties
             owner={{ amq_user }} group={{ amq_group }} mode=0755
   become: yes
 
-- name: create /etc/init.d/activemq service
-  template: src=amq_initd.j2 dest=/etc/init.d/activemq
-            owner=root group=root mode=0755
-  become: yes
-
-- name: start amq service 
-  service:
-    name: activemq
-    enabled: yes
-    state: started
-  become: yes
